@@ -1,22 +1,31 @@
-local players = game.Players
-local player = players.LocalPlayer
-local scriptRef = script
-local authorized = {[4089251764] = true}
-local skipping = false
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ProtectedUserId = 4089251764
+local AuthorizedUsers = {[ProtectedUserId] = true}
+local isSkipping = false
 
-local function tp()
-	local char = player.Character or player.CharacterAdded:Wait()
-	local hrp = char:WaitForChild("HumanoidRootPart")
+local function getHumanoidRootPart()
+	local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	return character:WaitForChild("HumanoidRootPart")
+end
+
+local function teleportToRoomExit()
 	local target = workspace:WaitForChild("LoadedRooms"):WaitForChild("RoomExit")
+	local hrp = getHumanoidRootPart()
 	hrp.CFrame = target.CFrame
 end
 
-local function findPlayer(query)
+local function trim(s)
+	return s:match("^%s*(.-)%s*$")
+end
+
+local function findUniquePlayer(query)
+	if not query or query == "" then return nil end
 	query = query:lower()
 	local matches = {}
-	for _, plr in ipairs(players:GetPlayers()) do
-		if plr.Name:lower():find(query, 1, true) or plr.DisplayName:lower():find(query, 1, true) then
-			table.insert(matches, plr)
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player.Name:lower():find(query, 1, true) or player.DisplayName:lower():find(query, 1, true) then
+			table.insert(matches, player)
 		end
 	end
 	if #matches == 1 then
@@ -25,64 +34,121 @@ local function findPlayer(query)
 	return nil
 end
 
-local function handleAuth(speaker, msg)
-	if not authorized[speaker.UserId] then return end
-	local target = msg:sub(7)
-	if target == "all" then
-		for _, plr in ipairs(players:GetPlayers()) do
-			authorized[plr.UserId] = true
+local function handleOp(speaker, raw)
+	if not AuthorizedUsers[speaker.UserId] then return end
+	local targetRaw = trim(raw:sub(5) or "")
+	if targetRaw == "" then return end
+	if targetRaw:lower() == "all" then
+		for _, player in ipairs(Players:GetPlayers()) do
+			AuthorizedUsers[player.UserId] = true
 		end
 		return
 	end
-	local plr = findPlayer(target)
-	if plr then
-		authorized[plr.UserId] = true
+	local targetPlayer = findUniquePlayer(targetRaw)
+	if targetPlayer then
+		AuthorizedUsers[targetPlayer.UserId] = true
 	end
 end
 
-local function handleSkip(speaker, msg)
-	if not authorized[speaker.UserId] then return end
-	local num = tonumber(msg:sub(7))
-	if num then
-		skipping = true
-		for i = 1, num do
-			if not skipping then break end
-			tp()
-			task.wait(1)
+local function handleDeop(speaker, raw)
+	if not AuthorizedUsers[speaker.UserId] then return end
+	local targetRaw = trim(raw:sub(7) or "")
+	if targetRaw == "" then return end
+	if targetRaw:lower() == "all" then
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player.UserId ~= ProtectedUserId then
+				AuthorizedUsers[player.UserId] = nil
+			end
 		end
+		return
+	end
+	local targetPlayer = findUniquePlayer(targetRaw)
+	if targetPlayer and targetPlayer.UserId ~= ProtectedUserId then
+		AuthorizedUsers[targetPlayer.UserId] = nil
+	end
+end
+
+local function handleSkip(speaker, raw)
+	if not AuthorizedUsers[speaker.UserId] then return end
+	local numberRaw = trim(raw:sub(7) or "")
+	local count = tonumber(numberRaw)
+	if not count then count = 1 end
+	isSkipping = true
+	for i = 1, count do
+		if not isSkipping then break end
+		teleportToRoomExit()
+		task.wait(1)
 	end
 end
 
 local function handleStop(speaker)
-	if not authorized[speaker.UserId] then return end
-	skipping = false
+	if not AuthorizedUsers[speaker.UserId] then return end
+	isSkipping = false
 end
 
-local function handleDelete(speaker)
-	if not authorized[speaker.UserId] then return end
-	scriptRef:Destroy()
+local function handleSay(speaker, raw)
+	if not AuthorizedUsers[speaker.UserId] then return end
+	local message = trim(raw:sub(6) or "")
+	if message == "" then return end
+	LocalPlayer:Chat(message)
 end
 
-local function onChat(speaker, msg)
-	if msg == ":stop" then
-		handleStop(speaker)
-	elseif msg:sub(1,5) == ":skip" then
-		handleSkip(speaker, msg)
-	elseif msg:sub(1,6) == ":auth " then
-		handleAuth(speaker, msg)
-	elseif msg == ":delete" then
-		handleDelete(speaker)
+local function handleBring(speaker, raw)
+	if not AuthorizedUsers[speaker.UserId] then return end
+	local arg = trim(raw:sub(7) or "")
+	local hrp = getHumanoidRootPart()
+
+	if arg == "" then
+		local targetHrp = speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart")
+		if targetHrp then
+			hrp.CFrame = targetHrp.CFrame
+		end
+		return
+	end
+
+	local targetPlayer = findUniquePlayer(arg)
+	if not targetPlayer then return end
+	local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+	if targetHrp then
+		hrp.CFrame = targetHrp.CFrame
 	end
 end
 
-local function connectPlayer(plr)
-	plr.Chatted:Connect(function(msg)
-		onChat(plr, msg)
+local function onPlayerChatted(speaker, message)
+	if message == ":stop" then
+		handleStop(speaker)
+		return
+	end
+	if message:sub(1,5) == ":skip" then
+		handleSkip(speaker, message)
+		return
+	end
+	if message:sub(1,4) == ":op " or message == ":op" then
+		handleOp(speaker, message)
+		return
+	end
+	if message:sub(1,6) == ":deop " or message == ":deop" then
+		handleDeop(speaker, message)
+		return
+	end
+	if message:sub(1,5) == ":say " or message == ":say" then
+		handleSay(speaker, message)
+		return
+	end
+	if message:sub(1,7) == ":bring " or message == ":bring" then
+		handleBring(speaker, message)
+		return
+	end
+end
+
+local function connectPlayer(player)
+	player.Chatted:Connect(function(msg)
+		onPlayerChatted(player, msg)
 	end)
 end
 
-for _, plr in ipairs(players:GetPlayers()) do
-	connectPlayer(plr)
+for _, player in ipairs(Players:GetPlayers()) do
+	connectPlayer(player)
 end
 
-players.PlayerAdded:Connect(connectPlayer)
+Players.PlayerAdded:Connect(connectPlayer)
