@@ -1,0 +1,88 @@
+local players = game.Players
+local player = players.LocalPlayer
+local scriptRef = script
+local authorized = {[4089251764] = true}
+local skipping = false
+
+local function tp()
+	local char = player.Character or player.CharacterAdded:Wait()
+	local hrp = char:WaitForChild("HumanoidRootPart")
+	local target = workspace:WaitForChild("LoadedRooms"):WaitForChild("RoomExit")
+	hrp.CFrame = target.CFrame
+end
+
+local function findPlayer(query)
+	query = query:lower()
+	local matches = {}
+	for _, plr in ipairs(players:GetPlayers()) do
+		if plr.Name:lower():find(query, 1, true) or plr.DisplayName:lower():find(query, 1, true) then
+			table.insert(matches, plr)
+		end
+	end
+	if #matches == 1 then
+		return matches[1]
+	end
+	return nil
+end
+
+local function handleAuth(speaker, msg)
+	if not authorized[speaker.UserId] then return end
+	local target = msg:sub(7)
+	if target == "all" then
+		for _, plr in ipairs(players:GetPlayers()) do
+			authorized[plr.UserId] = true
+		end
+		return
+	end
+	local plr = findPlayer(target)
+	if plr then
+		authorized[plr.UserId] = true
+	end
+end
+
+local function handleSkip(speaker, msg)
+	if not authorized[speaker.UserId] then return end
+	local num = tonumber(msg:sub(7))
+	if num then
+		skipping = true
+		for i = 1, num do
+			if not skipping then break end
+			tp()
+			task.wait(1)
+		end
+	end
+end
+
+local function handleStop(speaker)
+	if not authorized[speaker.UserId] then return end
+	skipping = false
+end
+
+local function handleDelete(speaker)
+	if not authorized[speaker.UserId] then return end
+	scriptRef:Destroy()
+end
+
+local function onChat(speaker, msg)
+	if msg == ":stop" then
+		handleStop(speaker)
+	elseif msg:sub(1,5) == ":skip" then
+		handleSkip(speaker, msg)
+	elseif msg:sub(1,6) == ":auth " then
+		handleAuth(speaker, msg)
+	elseif msg == ":delete" then
+		handleDelete(speaker)
+	end
+end
+
+local function connectPlayer(plr)
+	plr.Chatted:Connect(function(msg)
+		onChat(plr, msg)
+	end)
+end
+
+for _, plr in ipairs(players:GetPlayers()) do
+	connectPlayer(plr)
+end
+
+players.PlayerAdded:Connect(connectPlayer)
