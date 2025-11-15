@@ -1,30 +1,7 @@
-local Targets = getgenv().Targets or {"All"}
+local Target = getgenv().Target
+
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local AllBool = false
-
-local GetPlayer = function(Name)
-	Name = Name:lower()
-	if Name == "all" or Name == "others" then
-		AllBool = true
-		return nil
-	elseif Name == "random" then
-		local GetPlayers = Players:GetPlayers()
-		table.remove(GetPlayers, table.find(GetPlayers, Player))
-		return GetPlayers[math.random(#GetPlayers)]
-	else
-		for _,x in next, Players:GetPlayers() do
-			if x ~= Player and (x.Name:lower():match("^"..Name) or x.DisplayName:lower():match("^"..Name)) then
-				return x
-			end
-		end
-		return nil
-	end
-end
-
-local Message = function(_Title, _Text, Time)
-	game:GetService("StarterGui"):SetCore("SendNotification", {Title = _Title, Text = _Text, Duration = Time})
-end
 
 local SkidFling = function(TargetPlayer)
 	local Character = Player.Character
@@ -137,7 +114,7 @@ local SkidFling = function(TargetPlayer)
 				else
 					break
 				end
-			until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or TargetPlayer.Parent ~= Players or not TargetPlayer.Character == TCharacter or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
+			until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or TargetPlayer.Parent ~= Players or TargetPlayer.Character ~= TCharacter or THumanoid.Sit or Humanoid.Health <= 0 or tick() > Time + TimeToWait
 		end
 
 		workspace.FallenPartsDestroyHeight = 0/0
@@ -162,8 +139,6 @@ local SkidFling = function(TargetPlayer)
 			SFBasePart(THead)
 		elseif not TRootPart and not THead and Accessory and Handle then
 			SFBasePart(Handle)
-		else
-			return Message("Error Occurred", "Target is missing everything", 5)
 		end
 
 		BV:Destroy()
@@ -182,31 +157,7 @@ local SkidFling = function(TargetPlayer)
 			task.wait()
 		until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
 		workspace.FallenPartsDestroyHeight = getgenv().FPDH
-	else
-		return Message("Error Occurred", "Random error", 5)
 	end
 end
 
-local TargetPlayers = {}
-for _,x in next, Targets do
-	local P = GetPlayer(x)
-	if P then
-		table.insert(TargetPlayers, P)
-	end
-end
-
-if AllBool then
-	for _,x in next, Players:GetPlayers() do
-		if x ~= Player then
-			SkidFling(x)
-		end
-	end
-else
-	for _,x in next, TargetPlayers do
-		if x ~= Player then
-			SkidFling(x)
-		else
-			Message("Error Occurred", "Cannot target yourself", 5)
-		end
-	end
-end
+SkidFling(Target)
