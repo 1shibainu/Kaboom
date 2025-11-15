@@ -209,14 +209,12 @@ local bangTrack = nil
 
 local function Bang(speaker, raw)
 	if not Ops[speaker.UserId] then return end
-	print("aa")
 
 	local targetRaw = Trim(raw:sub(7))
 	local targetPlayer = GetPlayer(targetRaw)
 	if not targetPlayer then return end
 
 	if banging then
-		print("assa")
 		banging = false
 		if bangTrack then bangTrack:Stop() end
 		if bangAnim then bangAnim:Destroy() end
@@ -224,11 +222,11 @@ local function Bang(speaker, raw)
 		return
 	end
 
-	local humanoid = speaker.Character and speaker.Character:FindFirstChild("Humanoid")
+	local humanoid = lPlayer.Character.Humanoid
 	local speakerRoot = speaker.Character and speaker.Character:FindFirstChild("HumanoidRootPart")
 	local targetTorso = targetPlayer.Character and targetPlayer.Character:FindFirstChild("Torso")
 
-	if not humanoid or not speakerRoot or not targetTorso then return end
+	if not speakerRoot or not targetTorso then return end
 
 	bangAnim = Instance.new("Animation")
 	bangAnim.AnimationId = "rbxassetid://148840371"
@@ -239,11 +237,11 @@ local function Bang(speaker, raw)
 	banging = true
 
 	local offset = CFrame.new(0, 0, 1.1)
-	print("assass")
+
 	bangLoop = RunService.Stepped:Connect(function()
 		if not banging then return end
 		pcall(function()
-			speakerRoot.CFrame = targetTorso.CFrame * offset
+			GetRoot().CFrame = targetTorso.CFrame * offset
 		end)
 	end)
 end
