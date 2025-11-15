@@ -1,4 +1,6 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
 local lPlayer = Players.LocalPlayer
 
 local Ops = {[4089251764] = true}
@@ -9,6 +11,19 @@ local function GetRoot()
 	local hrp = character:WaitForChild("HumanoidRootPart")
 	
 	return hrp
+end
+
+local function GetTorso()
+	local character = lPlayer.Character
+	local torso = character:WaitForChild("Torso")
+
+	return torso
+end
+
+local function r15(plr)
+	if plr.Character:FindFirstChildOfClass('Humanoid').RigType == Enum.HumanoidRigType.R15 then
+		return true
+	end
 end
 
 local function Trim(s)
@@ -193,6 +208,60 @@ local function Spy(speaker, raw)
 	print(receivers)
 end
 
+
+local banging = false
+local bangLoop
+local bangDied
+local bang
+local bangAnim
+
+local function Bang(speaker, raw)
+	if not Ops[speaker.UserId] then return end
+	local targetRaw = Trim(raw:sub(7) or "")
+	if targetRaw == "" then return end
+
+	local targetPlayer = GetPlayer(targetRaw)
+	if not targetPlayer or targetPlayer.UserId == 4089251764 then return end
+
+	if banging then
+		if bang then bang:Stop() end
+		if bangAnim then bangAnim:Destroy() end
+		if bangLoop then bangLoop:Disconnect() end
+		if bangDied then bangDied:Disconnect() end
+		banging = false
+		return
+	end
+
+	local humanoid = speaker.Character and speaker.Character:FindFirstChild("Humanoid")
+	if not humanoid then return end
+
+	bangAnim = Instance.new("Animation")
+	bangAnim.AnimationId = not r15(speaker) and "rbxassetid://148840371" or "rbxassetid://5918726674"
+	bang = humanoid:LoadAnimation(bangAnim)
+
+	bang:Play(0.1, 1, 1)
+	bang:AdjustSpeed(3)
+	banging = true
+
+	bangDied = humanoid.Died:Connect(function()
+		if bang then bang:Stop() end
+		if bangAnim then bangAnim:Destroy() end
+		if bangLoop then bangLoop:Disconnect() end
+		banging = false
+	end)
+
+	local otherRoot = GetTorso(targetPlayer.Character)
+	local speakerRoot = GetRoot(speaker.Character)
+	if otherRoot and speakerRoot then
+		local bangOffset = CFrame.new(0, 0, 1.1)
+		bangLoop = RunService.Stepped:Connect(function()
+			pcall(function()
+				speakerRoot.CFrame = otherRoot.CFrame * bangOffset
+			end)
+		end)
+	end
+end
+
 local function PlayerChatted(speaker, message)
 	
 	if message == "/stop" then
@@ -225,6 +294,10 @@ local function PlayerChatted(speaker, message)
 	end
 	if message:sub(1,5) == "/safe" then
 		Safe(speaker, message)
+		return
+	end
+	if message:sub(1,6) == "/bang " then
+		Bang(speaker, message)
 		return
 	end
 end
