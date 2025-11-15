@@ -1,4 +1,4 @@
-local Targets = getgenv().Targets or {"All"}
+local Targets = getgenv().Targets
 
 print(target)
 
