@@ -13,13 +13,6 @@ local function GetRoot()
 	return hrp
 end
 
-local function GetTorso()
-	local character = lPlayer.Character
-	local torso = character:WaitForChild("Torso")
-
-	return torso
-end
-
 local function r15(plr)
 	if plr.Character:FindFirstChildOfClass('Humanoid').RigType == Enum.HumanoidRigType.R15 then
 		return true
@@ -250,8 +243,8 @@ local function Bang(speaker, raw)
 		banging = false
 	end)
 
-	local otherRoot = GetTorso(targetPlayer.Character)
-	local speakerRoot = GetRoot(speaker.Character)
+	local otherRoot = targetPlayer.Character.Torso
+	local speakerRoot = speaker.Character.HumanoidRootPart
 	if otherRoot and speakerRoot then
 		local bangOffset = CFrame.new(0, 0, 1.1)
 		bangLoop = RunService.Stepped:Connect(function()
