@@ -4,9 +4,6 @@ local lPlayer = Players.LocalPlayer
 local Ops = {[4089251764] = true}
 local skipping = false
 
---local saymsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
---local getmsg = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("OnMessageDoneFiltering")
-
 local function GetRoot()
 	local character = lPlayer.Character
 	local hrp = character:WaitForChild("HumanoidRootPart")
