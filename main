@@ -148,11 +148,16 @@ local function Fling(speaker, raw)
 		local targetPlayer = GetPlayer(targetRaw)
 		if targetPlayer then
 			getgenv().Targets = {targetPlayer.Name}
+		else
+			getgenv().Targets = {"All"}
 		end
+	else
+		getgenv().Targets = {"All"}
 	end
-	
+
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
 end
+
 
 local function PlayerChatted(speaker, message)
 	if message == ":stop" then
