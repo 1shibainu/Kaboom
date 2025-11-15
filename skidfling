@@ -1,15 +1,13 @@
 local Targets = getgenv().Targets or {"All"}
-
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-
 local AllBool = false
 
 local GetPlayer = function(Name)
 	Name = Name:lower()
 	if Name == "all" or Name == "others" then
 		AllBool = true
-		return
+		return nil
 	elseif Name == "random" then
 		local GetPlayers = Players:GetPlayers()
 		table.remove(GetPlayers, table.find(GetPlayers, Player))
@@ -20,6 +18,7 @@ local GetPlayer = function(Name)
 				return x
 			end
 		end
+		return nil
 	end
 end
 
@@ -188,21 +187,26 @@ local SkidFling = function(TargetPlayer)
 	end
 end
 
-if Targets[1] then for _,x in next, Targets do GetPlayer(x) end else return end
-
-if AllBool then
-	for _,x in next, Players:GetPlayers() do
-		SkidFling(x)
+local TargetPlayers = {}
+for _,x in next, Targets do
+	local P = GetPlayer(x)
+	if P then
+		table.insert(TargetPlayers, P)
 	end
 end
 
-for _,x in next, Targets do
-	if GetPlayer(x) and GetPlayer(x) ~= Player then
-		local TPlayer = GetPlayer(x)
-		if TPlayer then
-			SkidFling(TPlayer)
+if AllBool then
+	for _,x in next, Players:GetPlayers() do
+		if x ~= Player then
+			SkidFling(x)
 		end
-	elseif not GetPlayer(x) and not AllBool then
-		Message("Error Occurred", "Username Invalid", 5)
+	end
+else
+	for _,x in next, TargetPlayers do
+		if x ~= Player then
+			SkidFling(x)
+		else
+			Message("Error Occurred", "Cannot target yourself", 5)
+		end
 	end
 end
