@@ -1,5 +1,7 @@
 local Targets = getgenv().Targets or {"All"}
 
+print(target)
+
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
