@@ -209,6 +209,7 @@ local bang
 local bangAnim
 
 local function Bang(speaker, raw)
+	print("aaa")
 	if not Ops[speaker.UserId] then return end
 	local targetRaw = Trim(raw:sub(7) or "")
 	if targetRaw == "" then return end
