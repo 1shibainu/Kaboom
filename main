@@ -193,25 +193,6 @@ local function Spy(speaker, raw)
 	print(receivers)
 end
 
-local function checkHidden(speaker, message)
-	if speaker.Name == lPlayer.Name then return end
-	
-	message = message:gsub("[\n\r]", ""):gsub("\t", " "):gsub(" +", " ")
-	local hidden = true
-	local conn = getmsg.OnClientEvent:Connect(function(packet, channel)
-		if packet.SpeakerUserId == speaker.UserId and packet.Message == message:sub(#message - #packet.Message + 1) then
-			hidden = false
-		end
-	end)
-	wait(1)
-	conn:Disconnect()
-
-	if hidden then
-		saymsg:FireServer("/w ".. receivers[1] .. "{SPY} [".. speaker.Name .."]: "..message)
-	end
-end
-
-
 local function PlayerChatted(speaker, message)
 	
 	if message == "/stop" then
