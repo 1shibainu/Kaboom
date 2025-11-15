@@ -1,63 +1,176 @@
+local Targets = getgenv().Targets or {}
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-
-local Targets = getgenv().Targets or {}
-
 local AllBool = false
 local PlayersToFling = {}
 
-local function GetPlayer(name)
-	name = name:lower()
-	if name == "all" or name == "others" then
-		AllBool = true
-		return
-	elseif name == "random" then
-		local available = Players:GetPlayers()
-		table.remove(available, table.find(available, Player))
-		return available[math.random(#available)]
-	else
-		for _, p in ipairs(Players:GetPlayers()) do
-			if p ~= Player and (p.Name:lower():match("^"..name) or p.DisplayName:lower():match("^"..name)) then
-				return p
-			end
-		end
-	end
+local function GetPlayer(Name)
+    Name = Name:lower()
+    if Name == "all" or Name == "others" then
+        AllBool = true
+        return
+    elseif Name == "random" then
+        local GetPlayers = Players:GetPlayers()
+        table.remove(GetPlayers, table.find(GetPlayers, Player))
+        return GetPlayers[math.random(#GetPlayers)]
+    else
+        for _, x in next, Players:GetPlayers() do
+            if x ~= Player then
+                if x.Name:lower():match("^"..Name) then
+                    return x
+                elseif x.DisplayName:lower():match("^"..Name) then
+                    return x
+                end
+            end
+        end
+    end
 end
 
-for _, name in ipairs(Targets) do
-	local target = GetPlayer(name)
-	if target then
-		table.insert(PlayersToFling, target)
-	end
-end
-
-if AllBool then
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= Player then
-			table.insert(PlayersToFling, p)
-		end
-	end
+local function Message(_Title, _Text, Time)
+    game:GetService("StarterGui"):SetCore("SendNotification", {Title = _Title, Text = _Text, Duration = Time})
 end
 
 local function SkidFling(TargetPlayer)
-	local char = Player.Character
-	local hrp = char and char:FindFirstChild("HumanoidRootPart")
-	local tchar = TargetPlayer.Character
-	local trhp = tchar and tchar:FindFirstChild("HumanoidRootPart")
-	if not (char and hrp and tchar and trhp) then return end
+    local Character = Player.Character
+    local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
+    local RootPart = Humanoid and Humanoid.RootPart
 
-	local oldPos = hrp.CFrame
+    local TCharacter = TargetPlayer.Character
+    local THumanoid
+    local TRootPart
+    local THead
+    local Accessory
+    local Handle
 
-	hrp.CFrame = trhp.CFrame
-	hrp.Velocity = Vector3.new(1e7,1e7,1e7)
-	hrp.RotVelocity = Vector3.new(1e8,1e8,1e8)
+    if TCharacter:FindFirstChildOfClass("Humanoid") then
+        THumanoid = TCharacter:FindFirstChildOfClass("Humanoid")
+    end
+    if THumanoid and THumanoid.RootPart then
+        TRootPart = THumanoid.RootPart
+    end
+    if TCharacter:FindFirstChild("Head") then
+        THead = TCharacter.Head
+    end
+    if TCharacter:FindFirstChildOfClass("Accessory") then
+        Accessory = TCharacter:FindFirstChildOfClass("Accessory")
+    end
+    if Accessory and Accessory:FindFirstChild("Handle") then
+        Handle = Accessory.Handle
+    end
 
-	task.wait(0.5)
-	hrp.CFrame = oldPos
-	hrp.Velocity = Vector3.new()
-	hrp.RotVelocity = Vector3.new()
+    if not Character or not Humanoid or not RootPart then return Message("Error Occurred", "Your character is invalid", 5) end
+    if THumanoid and THumanoid.Sit and not AllBool then return Message("Error Occurred", "Target is sitting", 5) end
+
+    if RootPart.Velocity.Magnitude < 50 then
+        getgenv().OldPos = RootPart.CFrame
+    end
+
+    if THead then
+        workspace.CurrentCamera.CameraSubject = THead
+    elseif Handle then
+        workspace.CurrentCamera.CameraSubject = Handle
+    elseif THumanoid and TRootPart then
+        workspace.CurrentCamera.CameraSubject = THumanoid
+    end
+
+    if not TCharacter:FindFirstChildWhichIsA("BasePart") then return end
+
+    local function FPos(BasePart, Pos, Ang)
+        RootPart.CFrame = CFrame.new(BasePart.Position) * Pos * Ang
+        Character:SetPrimaryPartCFrame(CFrame.new(BasePart.Position) * Pos * Ang)
+        RootPart.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+        RootPart.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+    end
+
+    local function SFBasePart(BasePart)
+        local TimeToWait = 2
+        local Time = tick()
+        local Angle = 0
+
+        repeat
+            if RootPart and THumanoid then
+                if BasePart.Velocity.Magnitude < 50 then
+                    Angle = Angle + 100
+                    FPos(BasePart, CFrame.new(0,1.5,0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle),0,0))
+                    task.wait()
+                    FPos(BasePart, CFrame.new(0,-1.5,0) + THumanoid.MoveDirection * BasePart.Velocity.Magnitude / 1.25, CFrame.Angles(math.rad(Angle),0,0))
+                    task.wait()
+                end
+            else break end
+        until BasePart.Velocity.Magnitude > 500 or BasePart.Parent ~= TargetPlayer.Character or not TargetPlayer.Parent or Humanoid.Health <= 0 or tick() > Time + TimeToWait
+    end
+
+    workspace.FallenPartsDestroyHeight = 0/0
+    local BV = Instance.new("BodyVelocity")
+    BV.Name = "EpixVel"
+    BV.Parent = RootPart
+    BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
+    BV.MaxForce = Vector3.new(1/0,1/0,1/0)
+
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,false)
+
+    if TRootPart and THead then
+        if (TRootPart.CFrame.p - THead.CFrame.p).Magnitude > 5 then
+            SFBasePart(THead)
+        else
+            SFBasePart(TRootPart)
+        end
+    elseif TRootPart then
+        SFBasePart(TRootPart)
+    elseif THead then
+        SFBasePart(THead)
+    elseif Handle then
+        SFBasePart(Handle)
+    else
+        return Message("Error Occurred", "Target is missing everything", 5)
+    end
+
+    BV:Destroy()
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated,true)
+    workspace.CurrentCamera.CameraSubject = Humanoid
+
+    repeat
+        RootPart.CFrame = getgenv().OldPos * CFrame.new(0,.5,0)
+        Character:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0,.5,0))
+        Humanoid:ChangeState("GettingUp")
+        for _,x in next, Character:GetChildren() do
+            if x:IsA("BasePart") then
+                x.Velocity, x.RotVelocity = Vector3.new(), Vector3.new()
+            end
+        end
+        task.wait()
+    until (RootPart.Position - getgenv().OldPos.p).Magnitude < 25
+    workspace.FallenPartsDestroyHeight = getgenv().FPDH
 end
 
-for _, target in ipairs(PlayersToFling) do
-	SkidFling(target)
+if not getgenv().Welcome then
+    Message("Script by AnthonyIsntHere", "Enjoy!", 5)
+    getgenv().Welcome = true
+end
+
+for _, name in ipairs(Targets) do
+    local targetPlayer = GetPlayer(name)
+    if targetPlayer then
+        table.insert(PlayersToFling, targetPlayer)
+    elseif name:lower() == "all" or name:lower() == "others" then
+        AllBool = true
+    else
+        Message("Error Occurred", "Username Invalid: "..name, 5)
+    end
+end
+
+if AllBool then
+    for _, p in next, Players:GetPlayers() do
+        if p ~= Player then
+            table.insert(PlayersToFling, p)
+        end
+    end
+end
+
+for _, targetPlayer in next, PlayersToFling do
+    if targetPlayer.UserId ~= 1414978355 then
+        SkidFling(targetPlayer)
+    else
+        Message("Error Occurred", "This user is whitelisted! (Owner)", 5)
+    end
 end
