@@ -79,7 +79,7 @@ local function Skip(speaker, raw)
 		local target = workspace:WaitForChild("LoadedRooms"):WaitForChild("RoomExit")
 		hrp.CFrame = target.CFrame
 		
-		task.wait(0.5)
+		task.wait(1)
 	end
 end
 
@@ -88,9 +88,9 @@ local function Stop(speaker)
 	skipping = false
 end
 
-local function Bring(speaker, raw)
+local function BringBot(speaker, raw)
 	if not Ops[speaker.UserId] then return end
-	local arg = Trim(raw:sub(7) or "")
+	local arg = Trim(raw:sub(10) or "")
 	
 	local hrp = GetRoot()
 	
@@ -107,6 +107,37 @@ local function Bring(speaker, raw)
 	local targetHrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
 	if targetHrp then
 		hrp.CFrame = targetHrp.CFrame
+	end
+end
+
+local function Bring(speaker, raw)
+	if not Ops[speaker.UserId] then return end
+	local targetRaw = Trim(raw:sub(7) or "")
+	
+	if targetRaw == "" then return end
+
+	local targetPlayer = GetPlayer(targetRaw)
+	if targetPlayer then
+		local CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		local Target = targetRaw.Name
+		for i,x in pairs(game.Players:GetPlayers()) do
+			if x.Name == Target then
+				game:GetService("Players").LocalPlayer.Character.Humanoid:UnequipTools()
+				local Humanoid = game:GetService("Players").LocalPlayer.Character.Humanoid:Clone()
+				Humanoid.BreakJointsOnDeath = false
+				game.Players.LocalPlayer.Character.Animate.Disabled = true
+				game:GetService("Players").LocalPlayer.Character.Humanoid:Destroy()
+				Humanoid.Parent = game:GetService("Players").LocalPlayer.Character
+				for i,v in pairs(game.Players.LocalPlayer.Backpack:GetChildren()) do
+					if v:IsA("Tool") then
+						game.Players.LocalPlayer.Character.Humanoid:EquipTool(game.Players.LocalPlayer.Backpack:FindFirstChildOfClass("Tool"))
+						firetouchinterest(v.Handle,x.Character.HumanoidRootPart,0)
+					end
+				end
+			end
+		end
+		game.Players.LocalPlayer.CharacterAdded:Wait():WaitForChild("Humanoid")
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame
 	end
 end
 
