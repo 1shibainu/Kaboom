@@ -213,7 +213,6 @@ end
 
 
 local function PlayerChatted(speaker, message)
-	checkHidden(speaker, message)
 	
 	if message == "/stop" then
 		Stop(speaker)
