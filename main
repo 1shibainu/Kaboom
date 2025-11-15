@@ -147,7 +147,7 @@ local function Fling(speaker, raw)
 	if targetRaw ~= "" then 
 		local targetPlayer = GetPlayer(targetRaw)
 		if targetPlayer then
-			getgenv().Target = {targetPlayer.Name}
+			getgenv().Target = targetPlayer.Name
 			loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
 		end
 	else
