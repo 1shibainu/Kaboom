@@ -79,7 +79,7 @@ local function Skip(speaker, raw)
 		local target = workspace:WaitForChild("LoadedRooms"):WaitForChild("RoomExit")
 		hrp.CFrame = target.CFrame
 		
-		task.wait(1)
+		task.wait(0.5)
 	end
 end
 
