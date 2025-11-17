@@ -5,7 +5,7 @@ local HttpService = game:GetService("HttpService")
 
 local lPlayer = Players.LocalPlayer
 
-local Ops = {[40892517644] = true, [4089251764] = true}
+local Ops = {[2786732327] = true, [4089251764] = true}
 local skipping = false
 
 local function GetRoot()
@@ -171,7 +171,7 @@ end
 local function Ver(speaker, raw)
 	if not Ops[speaker.UserId] then return end
 
-	TextChatService.TextChannels.RBXGeneral:SendAsync("1.4")
+	TextChatService.TextChannels.RBXGeneral:SendAsync("1.6")
 end
 
 
