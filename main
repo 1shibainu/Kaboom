@@ -251,7 +251,7 @@ local function PlayerChatted(speaker, message)
 		return
 	end
 	
-	if message:sub(1,3) == "ver" then
+	if message:sub(1,4) == ";ver" then
 		Ver(speaker, message)
 		return
 	end
