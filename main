@@ -170,7 +170,7 @@ end
 
 
 local HF_API_KEY = "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"
-local HF_MODEL = "meta-llama/Llama-2-7b-hf"
+local HF_MODEL = "HuggingFaceH4/zephyr-7b-alpha"
 
 local function Geremy(speaker, raw)
 	if not Ops[speaker.UserId] then return end
